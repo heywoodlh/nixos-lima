@@ -1,0 +1,43 @@
+name: build-nixos-lima-img
+
+on:
+  schedule:
+        - cron: "45 5 * * Sun"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Install qemu-user-static
+        run: |
+          DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update -q -y && sudo apt-get install -q -y qemu-user-static
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            system-features = kvm x86_64-linux aarch64-linux
+            extra-platforms = aarch64-linux
+
+      - name: Build images
+        run: |
+          nix build -o ./x86_64-img .#img
+          mv ./x86_64-img/nixos.img nixos-x86_64.img
+          nix build --system aarch64-linux -o ./arm64-img .#packages.aarch64-linux.img
+          mv ./arm64-img/nixos.img nixos-arm64.img
+
+      - name: Create release with imgs
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: './*.img'
+          tag: "img"
+          allowUpdates: true
