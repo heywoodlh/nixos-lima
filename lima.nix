@@ -9,7 +9,7 @@
 
     # ssh
     services.openssh.enable = true;
-    services.openssh.permitRootLogin = "yes";
+    services.openssh.settings.PermitRootLogin = "yes";
     users.users.root.password = "nixos";
 
     security = {
@@ -23,7 +23,7 @@
         efiInstallAsRemovable = true;
     };
     fileSystems."/boot" = {
-        device = "/dev/vda1";  # /dev/disk/by-label/ESP
+        device = lib.mkForce "/dev/vda1";  # /dev/disk/by-label/ESP
         fsType = "vfat";
     };
     fileSystems."/" = {
